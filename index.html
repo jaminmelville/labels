@@ -1,0 +1,159 @@
+<meta charset="utf-8" />
+<html>
+  <head>
+    <style>
+      @font-face {
+          font-family: 'SmallTypeWriting';
+          src: url('SmallTypeWriting-Medium.woff2') format('woff2'),
+              url('SmallTypeWriting-Medium.woff') format('woff');
+          font-weight: 500;
+          font-style: normal;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        background-color: gray;
+        font-size: 1cm;
+        -webkit-print-color-adjust: exact;
+      }
+      body {
+        margin: 0 auto;
+        background-color: white;
+        width: 21cm;
+        text-align: center;
+      }
+      .label {
+        background-image: url('labels.png');
+        background-size: contain;
+        width: 7em;
+        height: 7em;
+        display: inline-flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 1em;
+        page-break-inside: avoid;
+        vertical-align: middle;
+        color: white;
+        font-family: 'SmallTypeWriting';
+        font-weight: bold;
+        outline: none;
+        transition: opacity 0.5s;
+      }
+      .label--large {
+        font-size: 1em;
+      }
+      .label--medium {
+        font-size: 0.78em;
+      }
+      .label--small {
+        font-size: 0.6em;
+      }
+      .label--tiny {
+        font-size: 0.3em;
+      }
+      .label--empty {
+        opacity: 0.5;
+      }
+      .label--adder {
+        cursor: pointer;
+        opacity: 0.5;
+      }
+      .label--adder:hover {
+        opacity: 0.75;
+      }
+      .label:focus {
+        opacity: 1;
+      }
+      @media print {
+        .label--adder, .label--empty, hr {
+          display: none;
+        }
+    }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.21.1/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+    class Labels extends React.Component {
+
+      state = {
+        labels: [
+          { size: 'medium', text: 'I am label' }
+        ],
+      }
+
+      sizes = [ 'large', 'medium', 'small', 'tiny' ]
+
+      sorter = (a, b) => {
+        const aSize = this.sizes.indexOf(a.size);
+        const bSize = this.sizes.indexOf(b.size);
+        return Math.sign(aSize - bSize);
+      }
+
+      constructor(props, context) {
+        super(props, context);
+        let labels = JSON.parse(localStorage.getItem('labels'));
+        if (!labels) {
+          labels = [];
+        }
+        this.state = { labels };
+      }
+
+      setState(state) {
+        localStorage.setItem('labels', JSON.stringify(state));
+        super.setState(state);
+      }
+
+      render() {
+        const labels = this.state.labels.sort(this.sorter).map((label, index) => (
+          <div
+            className={`label label--${label.size} ${label.text === '' ? 'label--empty': ''}`}
+            key={label.text + label.size}
+            dangerouslySetInnerHTML={{__html: label.text }}
+            contentEditable={true}
+            onBlur={(e) => {
+              const labels = this.state.labels;
+              labels[index].text = e.target.innerHTML;
+              if (e.target.innerHTML === '') {
+                labels.splice(index, 1);
+              }
+              this.setState(labels);
+            }}
+          />
+        ));
+        const adders = this.sizes.map(size => (
+          <div
+            className={`label label--${size} label--adder`}
+            key={size}
+            onClick={() => {
+              const labels = this.state.labels;
+              if (labels.filter(label => label.text === '').length === 0) {
+                labels.push({ text: '', size });
+                this.setState({ labels });
+              }
+            }}
+          >
+            +
+          </div>
+        ));
+        return (
+          <div>
+            {labels}
+            <hr />
+            {adders}
+          </div>
+        );
+      }
+    }
+    ReactDOM.render(
+      <Labels />,
+      document.getElementById('root')
+    );
+    </script>
+  </body>
+</html>
